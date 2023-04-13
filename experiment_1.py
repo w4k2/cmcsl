@@ -19,7 +19,8 @@ from sklearn.tree import DecisionTreeClassifier
 root = "../../mm-datasets/data_extracted/"
 datasets = ["mmIMDb"]
 topics = [
-    ["HR", "ABHMW", "CDFS", "FMNSSW", "ACCDDHMRS"],
+    ["HR", "DS", "HM", "BW", "AM", "FS", "FW", "MS", "FM", "AT", 
+     "HMSWW", "FMSW", "FMNSSW", "FFW", "CDFS", "AFHMS", "ACMD", "ACCDDHMRS", "ABHMW", "ABFHSS"],
 ]
 modalities = [
     ["img", "txt", "y"],
@@ -27,17 +28,17 @@ modalities = [
 
 base_clfs = [
     GaussianNB(),
-    LogisticRegression(random_state=1410),
+    LogisticRegression(random_state=1410, max_iter=5000),
     DecisionTreeClassifier(random_state=1410)
 ]
 
 # DATASETS x MODALITIES x FOLDS x CLF
-scores = np.zeros((4, 2, 10, 3))
+scores = np.zeros((20, 2, 10, 3))
 
 # For each modality get clusters and distances
 for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
     for topic_id, topic in tqdm(enumerate(topics[dataset_id]), disable=False, total=len(topics[dataset_id])):
-        X_m1_path = root + "%s/%s_%s_%s_weighted.npy" % (dataset, dataset, topic, modalities[dataset_id][0])
+        X_m1_path = root + "%s/%s_%s_%s_weighted_30.npy" % (dataset, dataset, topic, modalities[dataset_id][0])
         X_m2_path = root + "%s/%s_%s_%s.npy" % (dataset, dataset, topic, modalities[dataset_id][1])
         y_path = root + "%s/%s_%s_%s.npy" % (dataset, dataset, topic, modalities[dataset_id][2])
         
@@ -67,4 +68,4 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
                 scores[topic_id, 0, fold_id, clf_id] = balanced_accuracy_score(y_test, y_pred_m1)
                 scores[topic_id, 1, fold_id, clf_id] = balanced_accuracy_score(y_test, y_pred_m2)
                 
-np.save("scores/experiment_1", scores)
+np.save("scores/experiment_1_52", scores)

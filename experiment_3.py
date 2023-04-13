@@ -1,5 +1,5 @@
 """
-CMCSL depending on normalization, scores for plots in experiment_2_1.py
+
 """
 
 from utils import  mmBaseline, CMSL
@@ -48,16 +48,10 @@ alg_names = [
     "single",
     "cross",
     ]
-preproc_names = [
-    "off",
-    "norm",
-    "stand",
-    "both"
-    ]
 
-# PREPROC x DATASETS x ALG x TIMES x FOLDS
-scores_m1 = np.zeros((len(preproc_names), len(topics[0]), len(algorithms), n_times.shape[0], 10))
-scores_m2 = np.zeros((len(preproc_names), len(topics[0]), len(algorithms), n_times.shape[0], 10))
+# DATASETS x ALG x TIMES x FOLDS
+scores_m1 = np.zeros((len(topics[0]), len(algorithms), n_times.shape[0], 10))
+scores_m2 = np.zeros((len(topics[0]), len(algorithms), n_times.shape[0], 10))
 
 # For each modality get clusters and distances
 for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
@@ -78,15 +72,14 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
             X_m1_test, X_m2_test = X_concatenated[test][:, :X_m1.shape[1]], X_concatenated[test][:, X_m1.shape[1]:]
             y_train, y_test = y[train], y[test]
             
-            for preproc_id, preproc in enumerate(preproc_names):
-                for times_id, times in enumerate(n_times):
-                    for algorithm_id in range(len(algorithms)):
-                        clf = algorithms[algorithm_id](clone(base_clf), preproc=preproc) if algorithm_id == 0 else  algorithms[algorithm_id](clone(base_clf), random_state=1410, times=times, mode=alg_names[algorithm_id], preproc=preproc)
-                        
-                        clf.fit([X_m1_train, X_m2_train], y_train)
-                        
-                        pred_m1, pred_m2 = clf.predict([X_m1_test, X_m2_test])
-                        scores_m1[preproc_id, topic_id, algorithm_id, times_id, fold_id], scores_m2[preproc_id, topic_id, algorithm_id, times_id, fold_id] = balanced_accuracy_score(y_test, pred_m1), balanced_accuracy_score(y_test, pred_m2)
+            for times_id, times in enumerate(n_times):
+                for algorithm_id in range(len(algorithms)):
+                    clf = algorithms[algorithm_id](clone(base_clf)) if algorithm_id == 0 else  algorithms[algorithm_id](clone(base_clf), random_state=1410, times=times, mode=alg_names[algorithm_id])
+                    
+                    clf.fit([X_m1_train, X_m2_train], y_train)
+                    
+                    pred_m1, pred_m2 = clf.predict([X_m1_test, X_m2_test])
+                    scores_m1[topic_id, algorithm_id, times_id, fold_id], scores_m2[topic_id, algorithm_id, times_id, fold_id] = balanced_accuracy_score(y_test, pred_m1), balanced_accuracy_score(y_test, pred_m2)
         
-        np.save("scores/experiment_2_m1_52", scores_m1)
-        np.save("scores/experiment_2_m2_52", scores_m2)
+        np.save("scores/experiment_3_m1_52", scores_m1)
+        np.save("scores/experiment_3_m2_52", scores_m2)

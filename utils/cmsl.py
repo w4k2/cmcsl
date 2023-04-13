@@ -1,17 +1,20 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.base import clone
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, Normalizer
 from sklearn.metrics import pairwise_distances
 
 class CMSL(BaseEstimator, ClassifierMixin):
-    def __init__(self, base_clf = None, times=1, mode = "single", random_state=None):
+    def __init__(self, base_clf = None, times=1, mode = "single", preproc="both", random_state=None):
         self.base_clf = base_clf
         self.times = times
         self.mode = mode
+        self.preproc = preproc
         self.random_state = random_state
         self.random = np.random.RandomState(seed=self.random_state)
-        self.normalizer = StandardScaler()
+        # StandardScaler > MinMaxScaler; Normalizer > StandardScaler for single modality clustering
+        self.normalizer = Normalizer()
+        self.normalizer2 = StandardScaler()
         
     def fit(self, X_list, y):
         self.Xs = []
@@ -24,7 +27,15 @@ class CMSL(BaseEstimator, ClassifierMixin):
         
         # Get all modalities
         for X_modality in X_list:
-            X_modality = self.normalizer.fit_transform(X_modality)
+            if self.preproc == "off":
+                pass
+            elif self.preproc == "norm":
+                X_modality = self.normalizer.fit_transform(X_modality)
+            elif self.preproc == "stand":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+            elif self.preproc == "both":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer2.fit_transform(X_modality)
             self.Xs.append(X_modality)
         
         # CLustering all modalities
@@ -64,7 +75,7 @@ class CMSL(BaseEstimator, ClassifierMixin):
                 
                 distance_to_closest = np.sort(modality_distances, axis=1)[:, 0]
                 
-                scaler = MinMaxScaler()
+                # scaler = MinMaxScaler()
                 # distance_to_closest = scaler.fit_transform(distance_to_closest.reshape(1, -1)).ravel()
                 
                 propagated_y = self.y[seed_idxs][closest_centroids]
@@ -74,13 +85,14 @@ class CMSL(BaseEstimator, ClassifierMixin):
             distances = np.array(distances)
             propagated_labels = np.array(propagated_labels)
             # print(distances)
-            print(propagated_labels)
-            different = propagated_labels[0].shape[0] - np.where(np.equal(propagated_labels[0], propagated_labels[1]))[0].shape[0]
-            print(different)
-            exit()
+            # print(propagated_labels)
+            # different = propagated_labels[0].shape[0] - np.where(np.equal(propagated_labels[0], propagated_labels[1]))[0].shape[0]
+            # print(different)
+            # exit()
             
             closest_in_both = np.argmin(distances, axis=0)
             cross_labels = propagated_labels.T[np.arange(len(propagated_labels.T)), closest_in_both]
+            # cross_labels = propagated_labels[1]
             
             for X_modality in self.Xs:
                 self.clfs.append(clone(self.base_clf).fit(X_modality, cross_labels, sample_weight=class_weights[cross_labels]))
@@ -93,19 +105,40 @@ class CMSL(BaseEstimator, ClassifierMixin):
     def predict(self, X_list):
         X_preds = []
         for X_modality in X_list:
-            X_modality = self.normalizer.fit_transform(X_modality)
+            if self.preproc == "off":
+                pass
+            elif self.preproc == "norm":
+                X_modality = self.normalizer.fit_transform(X_modality)
+            elif self.preproc == "stand":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+            elif self.preproc == "both":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer2.fit_transform(X_modality)
             X_preds.append(X_modality)
         
         preds = [self.clfs[modality_id].predict(X_modality) for modality_id, X_modality in enumerate(X_preds)]
         return tuple(preds)
     
+    # def predict_combined(self, X_list):
+    #     X_preds = []
+    #     for X_modality in X_list:
+    #         X_modality = self.normalizer.fit_transform(X_modality)
+    #         X_modality = self.normalizer2.fit_transform(X_modality)
+    #         X_preds.append(X_modality)
+            
+    #     esm = np.array([self.clfs[modality_id].predict_proba(X_modality) for modality_id, X_modality in enumerate(X_preds)])
+    #     average_support = np.max(esm, axis=0)
+    #     prediction = np.argmax(average_support, axis=1)
+    #     return prediction
+    
 
 class mmBaseline(BaseEstimator, ClassifierMixin):
-    def __init__(self, base_clf = None, mode = "single", normalized = False):
+    def __init__(self, base_clf = None, mode = "single", preproc="both"):
         self.base_clf = base_clf
         self.mode = mode
-        self.normalized = normalized
-        self.normalizer = StandardScaler()
+        self.preproc = preproc
+        self.normalizer = Normalizer()
+        self.normalizer2 = StandardScaler()
         
     def fit(self, X_list, y):
         self.Xs = []
@@ -117,12 +150,18 @@ class mmBaseline(BaseEstimator, ClassifierMixin):
         sample_weights = class_weights[self.y]
         
         # Get all modalities
-        if self.normalized:
-            for X_modality in X_list:
+        for X_modality in X_list:
+            if self.preproc == "off":
+                pass
+            elif self.preproc == "norm":
                 X_modality = self.normalizer.fit_transform(X_modality)
-                self.Xs.append(X_modality)
-        else:
-            self.Xs = X_list
+            elif self.preproc == "stand":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+            elif self.preproc == "both":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer2.fit_transform(X_modality)
+            self.Xs.append(X_modality)
+        
         
         # Fit classifier for each modality
         self.clfs = []
@@ -133,23 +172,29 @@ class mmBaseline(BaseEstimator, ClassifierMixin):
     
     def predict(self, X_list):
         X_preds = []
-        if self.normalized:
-            for X_modality in X_list:
+        for X_modality in X_list:
+            if self.preproc == "off":
+                pass
+            elif self.preproc == "norm":
                 X_modality = self.normalizer.fit_transform(X_modality)
-                X_preds.append(X_modality)
-        else:
-            X_preds = X_list
+            elif self.preproc == "stand":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+            elif self.preproc == "both":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer2.fit_transform(X_modality)
+            X_preds.append(X_modality)
             
         preds = [self.clfs[modality_id].predict(X_modality) for modality_id, X_modality in enumerate(X_preds)]
         return tuple(preds)
     
-    def predict_combined(self, X_list):
-        X_preds = []
-        for X_modality in X_list:
-            X_modality = self.normalizer.fit_transform(X_modality)
-            X_preds.append(X_modality)
+    # def predict_combined(self, X_list):
+    #     X_preds = []
+    #     for X_modality in X_list:
+    #         X_modality = self.normalizer.fit_transform(X_modality)
+    #         X_modality = self.normalizer2.fit_transform(X_modality)
+    #         X_preds.append(X_modality)
             
-        esm = np.array([self.clfs[modality_id].predict_proba(X_modality) for modality_id, X_modality in enumerate(X_preds)])
-        average_support = np.mean(esm, axis=0)
-        prediction = np.argmax(average_support, axis=1)
-        return prediction
+    #     esm = np.array([self.clfs[modality_id].predict_proba(X_modality) for modality_id, X_modality in enumerate(X_preds)])
+    #     average_support = np.max(esm, axis=0)
+    #     prediction = np.argmax(average_support, axis=1)
+    #     return prediction
