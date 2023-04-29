@@ -75,7 +75,7 @@ all.append([''] + [''] + [", ".join(["%i" % i for i in c])
                              if len(c) > 0 and len(c) < len(clfs)-1 else ("all" if len(c) == len(clfs)-1 else "---")
                              for c in conclusions])
         
-print(tabulate(all, headers=["Dataset"] + ["Modality"] + clfs, floatfmt=".3f"))
+print(tabulate(all, headers=["Dataset"] + ["Modality"] + clfs, floatfmt=".3f", tablefmt="latex_booktabs"))
 
 # Multiclass
 all = []
@@ -128,6 +128,6 @@ all.append([''] + [''] + [", ".join(["%i" % i for i in c])
                              if len(c) > 0 and len(c) < len(clfs)-1 else ("all" if len(c) == len(clfs)-1 else "---")
                              for c in conclusions])
 
-print(tabulate(all, headers=["Dataset"] + ["Modality"] + clfs, floatfmt=".3f"))
+print(tabulate(all, headers=["Dataset"] + ["Modality"] + clfs, floatfmt=".3f", tablefmt="latex_booktabs"))
             
             

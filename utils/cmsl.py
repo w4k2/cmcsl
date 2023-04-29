@@ -15,6 +15,7 @@ class CMSL(BaseEstimator, ClassifierMixin):
         # StandardScaler > MinMaxScaler; Normalizer > StandardScaler for single modality clustering
         self.normalizer = Normalizer()
         self.normalizer2 = StandardScaler()
+        self.normalizer3 = MinMaxScaler()
         
     def fit(self, X_list, y):
         self.Xs = []
@@ -33,9 +34,24 @@ class CMSL(BaseEstimator, ClassifierMixin):
                 X_modality = self.normalizer.fit_transform(X_modality)
             elif self.preproc == "stand":
                 X_modality = self.normalizer2.fit_transform(X_modality)
-            elif self.preproc == "both":
+            elif self.preproc == "minmax":
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "both1":
                 X_modality = self.normalizer.fit_transform(X_modality)
                 X_modality = self.normalizer2.fit_transform(X_modality)
+            elif self.preproc == "both2":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer.fit_transform(X_modality)
+            elif self.preproc == "both3":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "both4":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "three":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
             self.Xs.append(X_modality)
         
         # CLustering all modalities
@@ -111,9 +127,24 @@ class CMSL(BaseEstimator, ClassifierMixin):
                 X_modality = self.normalizer.fit_transform(X_modality)
             elif self.preproc == "stand":
                 X_modality = self.normalizer2.fit_transform(X_modality)
-            elif self.preproc == "both":
+            elif self.preproc == "minmax":
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "both1":
                 X_modality = self.normalizer.fit_transform(X_modality)
                 X_modality = self.normalizer2.fit_transform(X_modality)
+            elif self.preproc == "both2":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer.fit_transform(X_modality)
+            elif self.preproc == "both3":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "both4":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "three":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
             X_preds.append(X_modality)
         
         preds = [self.clfs[modality_id].predict(X_modality) for modality_id, X_modality in enumerate(X_preds)]
@@ -139,6 +170,7 @@ class mmBaseline(BaseEstimator, ClassifierMixin):
         self.preproc = preproc
         self.normalizer = Normalizer()
         self.normalizer2 = StandardScaler()
+        self.normalizer3 = MinMaxScaler()
         
     def fit(self, X_list, y):
         self.Xs = []
@@ -157,9 +189,24 @@ class mmBaseline(BaseEstimator, ClassifierMixin):
                 X_modality = self.normalizer.fit_transform(X_modality)
             elif self.preproc == "stand":
                 X_modality = self.normalizer2.fit_transform(X_modality)
-            elif self.preproc == "both":
+            elif self.preproc == "minmax":
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "both1":
                 X_modality = self.normalizer.fit_transform(X_modality)
                 X_modality = self.normalizer2.fit_transform(X_modality)
+            elif self.preproc == "both2":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer.fit_transform(X_modality)
+            elif self.preproc == "both3":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "both4":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "three":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
             self.Xs.append(X_modality)
         
         
@@ -179,9 +226,24 @@ class mmBaseline(BaseEstimator, ClassifierMixin):
                 X_modality = self.normalizer.fit_transform(X_modality)
             elif self.preproc == "stand":
                 X_modality = self.normalizer2.fit_transform(X_modality)
-            elif self.preproc == "both":
+            elif self.preproc == "minmax":
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "both1":
                 X_modality = self.normalizer.fit_transform(X_modality)
                 X_modality = self.normalizer2.fit_transform(X_modality)
+            elif self.preproc == "both2":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer.fit_transform(X_modality)
+            elif self.preproc == "both3":
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "both4":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
+            elif self.preproc == "three":
+                X_modality = self.normalizer.fit_transform(X_modality)
+                X_modality = self.normalizer2.fit_transform(X_modality)
+                X_modality = self.normalizer3.fit_transform(X_modality)
             X_preds.append(X_modality)
             
         preds = [self.clfs[modality_id].predict(X_modality) for modality_id, X_modality in enumerate(X_preds)]
