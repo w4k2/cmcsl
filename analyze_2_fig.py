@@ -20,7 +20,7 @@ modalities = [
     ["img", "txt", "y"],
 ]
 
-titles = ["RAW", "L2 Normalized", "Standarized", "MinMax", "L2 Normalized + Standarized"]
+titles = ["RAW", "L2", "STD", "MM", "L2STD"]
 
 alg_names = [
     "full", 
@@ -130,7 +130,7 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
             for class_id in classes:
                 counts, bins = np.histogram(mean_X_m1[y_m1 == class_id], bins=32)
                 ax[0, i].stairs(counts, bins)
-                ax[0, i].set_title("IMG %s" % (titles[i]), fontsize = 15)
+                ax[0, i].set_title("VISUAL %s" % (titles[i]), fontsize = 15)
                 ax[0, i].spines[['right', 'top']].set_visible(False)
                 ax[0, i].grid((.7, .7, .7), ls=":")
                 ax[0, i].set_ylabel("Counts", fontsize = 12)
@@ -188,7 +188,7 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
             for class_id in classes:
                 counts, bins = np.histogram(mean_X_m2[y_m2 == class_id], bins=32)
                 ax[1, i].stairs(counts, bins)
-                ax[1, i].set_title("TXT %s" % (titles[i]), fontsize = 15)
+                ax[1, i].set_title("TEXT %s" % (titles[i]), fontsize = 15)
                 ax[1, i].spines[['right', 'top']].set_visible(False)
                 ax[1, i].grid((.7, .7, .7), ls=":")
                 ax[1, i].set_ylabel("Counts", fontsize = 12)
@@ -211,4 +211,5 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
         
         
         plt.savefig("figures/ex2/whole_%s_more.png" % topic)
+        plt.savefig("figures/ex2/whole_%s_more.eps" % topic)
         # exit()
