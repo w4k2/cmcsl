@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, Normalizer
 from sklearn.metrics import pairwise_distances
 
 class CMSL(BaseEstimator, ClassifierMixin):
-    def __init__(self, base_clf = None, times=1, mode = "single", preproc="both", random_state=None):
+    def __init__(self, base_clf = None, times=1, mode = "single", preproc="both1", random_state=None):
         self.base_clf = base_clf
         self.times = times
         self.mode = mode
@@ -164,7 +164,7 @@ class CMSL(BaseEstimator, ClassifierMixin):
     
 
 class mmBaseline(BaseEstimator, ClassifierMixin):
-    def __init__(self, base_clf = None, mode = "single", preproc="both"):
+    def __init__(self, base_clf = None, mode = "single", preproc="both1"):
         self.base_clf = base_clf
         self.mode = mode
         self.preproc = preproc
@@ -249,14 +249,14 @@ class mmBaseline(BaseEstimator, ClassifierMixin):
         preds = [self.clfs[modality_id].predict(X_modality) for modality_id, X_modality in enumerate(X_preds)]
         return tuple(preds)
     
-    # def predict_combined(self, X_list):
-    #     X_preds = []
-    #     for X_modality in X_list:
-    #         X_modality = self.normalizer.fit_transform(X_modality)
-    #         X_modality = self.normalizer2.fit_transform(X_modality)
-    #         X_preds.append(X_modality)
+    def predict_combined(self, X_list):
+        X_preds = []
+        for X_modality in X_list:
+            X_modality = self.normalizer.fit_transform(X_modality)
+            X_modality = self.normalizer2.fit_transform(X_modality)
+            X_preds.append(X_modality)
             
-    #     esm = np.array([self.clfs[modality_id].predict_proba(X_modality) for modality_id, X_modality in enumerate(X_preds)])
-    #     average_support = np.max(esm, axis=0)
-    #     prediction = np.argmax(average_support, axis=1)
-    #     return prediction
+        esm = np.array([self.clfs[modality_id].predict_proba(X_modality) for modality_id, X_modality in enumerate(X_preds)])
+        average_support = np.max(esm, axis=0)
+        prediction = np.argmax(average_support, axis=1)
+        return prediction

@@ -42,6 +42,22 @@ scores_m2 = np.load("scores/experiment_3_m2_52.npy")
 scores_m1 = np.mean(scores_m1, axis=3)
 scores_m2 = np.mean(scores_m2, axis=3)
 
+
+"""
+Additional late fusion
+"""
+# DATASETS x ALG X TIMES x FOLDS x BASE
+scores_lf = np.load("scores/experiment_3_52_late_fusion_all_clfs.npy")
+# DATASETS x ALG X TIMES x BASE
+scores_lf = np.mean(scores_lf, axis=3)
+print(scores_lf.shape)
+# DATASETS X TIMES
+scores_lf_gnb = scores_lf[:, 0, :, 0]
+print(scores_lf_gnb.shape)
+
+"""
+"""
+
 lw = 1.5
 
 # For each modality get clusters and distances
@@ -49,6 +65,8 @@ for topic_id, topic in tqdm(enumerate(topics[0]), total = 20):
     # ALG x TIMES
     topic_scores_m1 = scores_m1[topic_id]
     topic_scores_m2 = scores_m2[topic_id]
+    
+    topic_scores_lf = scores_lf_gnb[topic_id]
     
     fig, ax = plt.subplots(1, 1, figsize=(12, 12/1.618))
     ax.set_yticks(np.arange(0.1, 1.1, .1))
@@ -63,6 +81,8 @@ for topic_id, topic in tqdm(enumerate(topics[0]), total = 20):
         alg_scores_m1 = topic_scores_m1[algorithm_id]
         alg_scores_m2 = topic_scores_m2[algorithm_id]
         
+        
+        
         # ax.plot(n_times, alg_scores_m1, c=colors[algorithm_id], ls="-", label = "%s %s %.3f" % (modalities[0][0], alg_names[algorithm_id], np.mean(alg_scores_m1)))
         # ax.plot(n_times, alg_scores_m2, c=colors[algorithm_id], ls="--", label = "%s %s %.3f" % (modalities[0][1], alg_names[algorithm_id], np.mean(alg_scores_m2)))
         
@@ -76,9 +96,13 @@ for topic_id, topic in tqdm(enumerate(topics[0]), total = 20):
             
             ax.plot(n_times, alg_scores_m1, c="red", ls="-.", lw=lw, label = "%s %s %.3f" % (modalities[0][0], alg_names[algorithm_id], np.mean(alg_scores_m1)))
             ax.plot(n_times, alg_scores_m2, c="blue", ls="-.", lw=lw, label = "%s %s %.3f" % (modalities[0][1], alg_names[algorithm_id], np.mean(alg_scores_m2)))
+            
         else:
             ax.plot(n_times, alg_scores_m1, c="red", lw=.8, ls=ls[algorithm_id], label = "%s %s %.3f" % (modalities[0][0], alg_names[algorithm_id], np.mean(alg_scores_m1)))
             ax.plot(n_times, alg_scores_m2, c="blue", lw=.8, ls=ls[algorithm_id], label = "%s %s %.3f" % (modalities[0][1], alg_names[algorithm_id], np.mean(alg_scores_m2)))
+            
+    ax.plot(n_times, topic_scores_lf, c="black", ls="-", lw=1, label = "%s %s %.3f" % (modalities[0][1], alg_names[algorithm_id], np.mean(topic_scores_lf)))
+    print(topic_scores_lf)
     
         # """
         

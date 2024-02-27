@@ -33,11 +33,13 @@ scores_m1 = np.load("scores/experiment_3_m1_52.npy")
 scores_m2 = np.load("scores/experiment_3_m2_52.npy")
 scores_m1_mc = np.load("scores/experiment_3_m1_52_mc.npy")
 scores_m2_mc = np.load("scores/experiment_3_m2_52_mc.npy")
-# MODALITY x TOPIC x ALG x TIMES x FOLDS
+# MODALITY x TOPIC x ALG x TIMES x FOLDS x CLFS
 scores_all = np.stack((scores_m1, scores_m2))
 scores_all_mc = np.stack((scores_m1_mc, scores_m2_mc))
+# All three base classifiers
 scores_all = np.concatenate((scores_all.reshape(2, 20, 4, 20, 10, 1), scores_all_mc), axis=5)
 
+# Only GNB – last dim
 # MODALITY x TOPIC x ALG x FOLDS
 scores_all = np.mean(scores_all, axis=3)
 scores_all = scores_all[:, :, :, :, 0]
