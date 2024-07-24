@@ -4,6 +4,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import matplotlib
+
+
+matplotlib.rcParams.update({'font.size': 13, "font.family" : "monospace"})
 
 
 root = "../../mm-datasets/data_extracted/"
@@ -21,11 +25,16 @@ modalities = [
     ["img", "txt", "y"],
 ]
 
+modalities_names = [
+    # ["video", "audio", "y"],
+    ["VISUAL", "TEXT"],
+]
+
 alg_names = [
-    "full", 
-    "seed", 
-    "single",
-    "cross",
+    "FULL", 
+    "PRE", 
+    "UNI",
+    "CMCSL",
     ]
 
 # ls = [":", "--", "-.", "-"]
@@ -51,12 +60,30 @@ scores_lf = np.load("scores/experiment_3_52_late_fusion_all_clfs.npy")
 # DATASETS x ALG X TIMES x BASE
 scores_lf = np.mean(scores_lf, axis=3)
 print(scores_lf.shape)
+print(scores_lf[0, 0, :, 0])
 # DATASETS X TIMES
 scores_lf_gnb = scores_lf[:, 0, :, 0]
 print(scores_lf_gnb.shape)
 
 """
 """
+
+"""
+Additional early fusion
+"""
+# DATASETS x ALG X TIMES x FOLDS x BASE
+scores_ef = np.load("scores/experiment_3_52_early_fusion_all_clfs.npy")
+# DATASETS x ALG X TIMES x BASE
+scores_ef = np.mean(scores_ef, axis=3)
+print(scores_ef.shape)
+print(scores_ef[0, 0, :, 0])
+# DATASETS X TIMES
+scores_ef_gnb = scores_ef[:, 0, :, 0]
+scores_ef_gnb = np.repeat(scores_ef_gnb, 20, 1)
+print(scores_ef_gnb.shape)
+"""
+"""
+
 
 lw = 1.5
 
@@ -67,10 +94,13 @@ for topic_id, topic in tqdm(enumerate(topics[0]), total = 20):
     topic_scores_m2 = scores_m2[topic_id]
     
     topic_scores_lf = scores_lf_gnb[topic_id]
+    topic_scores_ef = scores_ef_gnb[topic_id]
     
-    fig, ax = plt.subplots(1, 1, figsize=(12, 12/1.618))
+    fig, ax = plt.subplots(1, 1, figsize=(9, 6))
     ax.set_yticks(np.arange(0.1, 1.1, .1))
-    ax.set_ylim(0.1, 1.0)
+    # PP-RAI 2024
+    ax.set_ylim(0.5, 1.0)
+    # ax.set_ylim(0.1, 1.0)
     ax.set_xticks([i for i in n_times])
     ax.set_xlim(n_times[0], n_times[-1])
     ax.spines[['right', 'top']].set_visible(False)
@@ -94,21 +124,26 @@ for topic_id, topic in tqdm(enumerate(topics[0]), total = 20):
             # ax.plot(n_times, alg_scores_m1, c="blue", ls=ls[algorithm_id], lw=lw, label = "%s %s %.3f" % (modalities[0][0], alg_names[algorithm_id], np.mean(alg_scores_m1)))
             # ax.plot(n_times, alg_scores_m2, c="red", ls=ls[algorithm_id], lw=lw, label = "%s %s %.3f" % (modalities[0][1], alg_names[algorithm_id], np.mean(alg_scores_m2)))
             
-            ax.plot(n_times, alg_scores_m1, c="red", ls="-.", lw=lw, label = "%s %s %.3f" % (modalities[0][0], alg_names[algorithm_id], np.mean(alg_scores_m1)))
-            ax.plot(n_times, alg_scores_m2, c="blue", ls="-.", lw=lw, label = "%s %s %.3f" % (modalities[0][1], alg_names[algorithm_id], np.mean(alg_scores_m2)))
+            ax.plot(n_times, alg_scores_m1, c="red", ls="-.", lw=lw, label = "%s %s %.3f" % (modalities_names[0][0], alg_names[algorithm_id], np.mean(alg_scores_m1)))
+            ax.plot(n_times, alg_scores_m2, c="blue", ls="-.", lw=lw, label = "%s %s %.3f" % (modalities_names[0][1], alg_names[algorithm_id], np.mean(alg_scores_m2)))
             
         else:
-            ax.plot(n_times, alg_scores_m1, c="red", lw=.8, ls=ls[algorithm_id], label = "%s %s %.3f" % (modalities[0][0], alg_names[algorithm_id], np.mean(alg_scores_m1)))
-            ax.plot(n_times, alg_scores_m2, c="blue", lw=.8, ls=ls[algorithm_id], label = "%s %s %.3f" % (modalities[0][1], alg_names[algorithm_id], np.mean(alg_scores_m2)))
+            ax.plot(n_times, alg_scores_m1, c="red", lw=.8, ls=ls[algorithm_id], label = "%s %s %.3f" % (modalities_names[0][0], alg_names[algorithm_id], np.mean(alg_scores_m1)))
+            ax.plot(n_times, alg_scores_m2, c="blue", lw=.8, ls=ls[algorithm_id], label = "%s %s %.3f" % (modalities_names[0][1], alg_names[algorithm_id], np.mean(alg_scores_m2)))
             
-    ax.plot(n_times, topic_scores_lf, c="black", ls="-", lw=1, label = "%s %s %.3f" % (modalities[0][1], alg_names[algorithm_id], np.mean(topic_scores_lf)))
+    ax.plot(n_times, topic_scores_lf, c="black", ls="-", lw=1, label = "LATE FUSION %.3f" % (np.mean(topic_scores_lf)))
+    ax.plot(n_times, topic_scores_ef, c="black", ls="--", lw=1, label = "EARLY FUSION %.3f" % (np.mean(topic_scores_ef)))
     print(topic_scores_lf)
     
         # """
         
     plt.grid((.7, .7, .7), ls=":")
     plt.tight_layout()
-    plt.savefig("figures/ex3/ex3_%s.png" % (topic), dpi=200)
+    plt.legend(frameon=False, ncol=3, loc="upper center")
+    # plt.savefig("figures/ex3/ex3_%s.png" % (topic), dpi=200)
+    # plt.savefig("figures/ex3/ex3_%s.eps" % (topic), dpi=200)
+    plt.savefig("figures/ex3/ex3_%s_pprai24.png" % (topic), dpi=200)
+    plt.savefig("figures/ex3/ex3_%s_pprai24.eps" % (topic), dpi=200)
     plt.close()
         
         

@@ -20,7 +20,9 @@ modalities = [
 ]
 
 alg_names = [
-    "full", 
+    "full",
+    "early fusion",
+    "late fusion",
     "seed", 
     "single",
     "cross",
@@ -45,35 +47,73 @@ scores_all = np.mean(scores_all, axis=3)
 scores_all = scores_all[:, :, :, :, 0]
 scores_all_binary = scores_all[:, :10]
 scores_all_multi = scores_all[:, 10:]
-print(scores_all_binary, scores_all_binary.shape)
+
+"""
+LATE FUSION
+"""
+# TOPIC x ALG X TIMES x FOLDS x BASE
+scores_lf = np.load("scores/experiment_3_52_late_fusion_all_clfs.npy")
+# TOPIC x ALG X TIMES x FOLDS
+scores_lf_gnb = scores_lf[:, :, :, :, 0]
+# TOPIC x ALG x FOLDS
+scores_lf_gnb = np.mean(scores_lf_gnb, axis=2)
+scores_lf_gnb_binary = np.array([scores_lf_gnb[:10], scores_lf_gnb[:10]])
+scores_lf_gnb_multi = np.array([scores_lf_gnb[10:], scores_lf_gnb[10:]])
+
+scores_all_binary = np.concatenate((scores_all_binary, scores_lf_gnb_binary), axis=2)
+scores_all_multi = np.concatenate((scores_all_multi, scores_lf_gnb_multi), axis=2)
+
+# # MEthod order
+# scores_all_binary = scores_all_binary[:, :, [0, 4, 1, 2, 3], :]
+# scores_all_multi = scores_all_multi[:, :, [0, 4, 1, 2, 3], :]
+
+"""
+EARLY FUSION
+"""
+# TOPIC x ALG X TIMES x FOLDS x BASE
+scores_ef = np.load("scores/experiment_3_52_early_fusion_all_clfs.npy")
+# TOPIC x ALG X FOLDS
+scores_ef_gnb = scores_ef[:, :, 0, :, 0]
+# TOPIC x ALG x FOLDS
+scores_ef_gnb_binary = np.array([scores_ef_gnb[:10], scores_ef_gnb[:10]])
+scores_ef_gnb_multi = np.array([scores_ef_gnb[10:], scores_ef_gnb[10:]])
+
+scores_all_binary = np.concatenate((scores_all_binary, scores_ef_gnb_binary), axis=2)
+scores_all_multi = np.concatenate((scores_all_multi, scores_ef_gnb_multi), axis=2)
+
+# MEthod order
+scores_all_binary = scores_all_binary[:, :, [0, 5, 4, 1, 2, 3], :]
+scores_all_multi = scores_all_multi[:, :, [0, 5, 4, 1, 2, 3], :]
 
 # Binary
 all = []
 ranks = []
+wilc = []
 for data_id, data in enumerate(topics[:10]):
     # MODALITY x ALG x FOLDS
     data_scores = scores_all_binary[:, data_id]
     for modality_id, modality in enumerate(modalities[0]):
         # ALG x FOLDS
         modality_scores = data_scores[modality_id]
-        ranks.append(rankdata(np.mean(modality_scores[1:], axis=1)))
-        
+        ranks.append(rankdata(np.mean(modality_scores[3:], axis=1)))
+        wilc.append(np.mean(modality_scores[3:], axis=1))
         all.append(["%s"% data] + ["%s"% modality] + ["%.3f" % score for score in np.mean(modality_scores, axis=1)])
         
         # t-test corrected
-        T, p = np.array([[t_test_corrected(modality_scores[[1, 2, 3]][i],
-                               modality_scores[[1, 2, 3]][j]) if i != j else (0.0, 1.0)
-                              for i in range(n_clfs-1)]
-                             for j in range(n_clfs-1)]
+        print(modality_scores.shape)
+        T, p = np.array([[t_test_corrected(modality_scores[[3, 4, 5]][i],
+                               modality_scores[[3, 4, 5]][j]) if i != j else (0.0, 1.0)
+                              for i in range(n_clfs-3)]
+                             for j in range(n_clfs-3)]
                         ).swapaxes(0, 2)
-        mean_adv = np.mean(modality_scores[[1, 2, 3]], axis=1) < np.mean(modality_scores[[1, 2, 3]], axis=1)[:, np.newaxis]
+        mean_adv = np.mean(modality_scores[[3, 4, 5]], axis=1) < np.mean(modality_scores[[3, 4, 5]], axis=1)[:, np.newaxis]
         stat_adv = p < alfa
         
         _ = np.where(stat_adv * mean_adv)
-        conclusions = [list(1 + _[1][_[0] == i]) for i in range(n_clfs)]
+        conclusions = [list(1 + _[1][_[0] == i]) for i in range(n_clfs-1)]
         
-        all.append([''] + [''] + [''] + [", ".join(["%i" % i for i in c])
-                                         if len(c) > 0 and len(c) < n_clfs-2 else ("all" if len(c) == n_clfs-2 else "---")
+        all.append([''] +[''] +[''] + [''] + [''] + [", ".join(["%i" % i for i in c])
+                                         if len(c) > 0 and len(c) < n_clfs-4 else ("all" if len(c) == n_clfs-4 else "---")
                                          for c in conclusions])
         
 # Wilcoxon
@@ -82,22 +122,27 @@ ranks = np.array(ranks)
 # print(ranks, ranks.shape)
 mean_ranks = np.mean(ranks, axis=0)
 
-w_statistic = np.zeros((n_clfs-1, n_clfs-1))
-p = np.zeros((n_clfs-1, n_clfs-1))
+# ranks = np.array(wilc)
 
-for i in range(n_clfs-1):
-    for j in range(n_clfs-1):
+
+w_statistic = np.zeros((n_clfs-3, n_clfs-3))
+p = np.zeros((n_clfs-3, n_clfs-3))
+
+for i in range(n_clfs-3):
+    for j in range(n_clfs-3):
         w_statistic[i, j], p[i, j] = ranksums(ranks.T[i], ranks.T[j])
 
 _ = np.where((p < alfa) * (w_statistic > 0))
-conclusions = [list(1 + _[1][_[0] == i]) for i in range(n_clfs)]
+conclusions = [list(1 + _[1][_[0] == i]) for i in range(n_clfs-1)]
 
-all.append(['Average rank'] + [''] + [''] + ["%.3f" % v for v in mean_ranks])
-all.append([''] + [''] + [''] + [", ".join(["%i" % i for i in c])
-                             if len(c) > 0 and len(c) < n_clfs-2 else ("all" if len(c) == n_clfs-2 else "---")
+all.append(['Average rank'] + [''] + [''] + [''] + [''] + ["%.3f" % v for v in mean_ranks])
+all.append([''] +[''] +[''] + [''] + [''] + [", ".join(["%i" % i for i in c])
+                             if len(c) > 0 and len(c) < n_clfs-4 else ("all" if len(c) == n_clfs-4 else "---")
                              for c in conclusions])
         
 print(tabulate(all, headers=["Dataset"] + ["M"] + alg_names, floatfmt=".3f", tablefmt="latex_booktabs"))
+# exit()
+
 
 
 # Multi
@@ -109,24 +154,24 @@ for data_id, data in enumerate(topics[10:]):
     for modality_id, modality in enumerate(modalities[0]):
         # ALG x FOLDS
         modality_scores = data_scores[modality_id]
-        ranks.append(rankdata(np.mean(modality_scores[1:], axis=1)))
+        ranks.append(rankdata(np.mean(modality_scores[3:], axis=1)))
         
         all.append(["%s"% data] + ["%s"% modality] + ["%.3f" % score for score in np.mean(modality_scores, axis=1)])
         
         # t-test corrected
-        T, p = np.array([[t_test_corrected(modality_scores[[1, 2, 3]][i],
-                               modality_scores[[1, 2, 3]][j]) if i != j else (0.0, 1.0)
-                              for i in range(n_clfs-1)]
-                             for j in range(n_clfs-1)]
+        T, p = np.array([[t_test_corrected(modality_scores[[3, 4, 5]][i],
+                               modality_scores[[3, 4, 5]][j]) if i != j else (0.0, 1.0)
+                              for i in range(n_clfs-3)]
+                             for j in range(n_clfs-3)]
                         ).swapaxes(0, 2)
-        mean_adv = np.mean(modality_scores[[1, 2, 3]], axis=1) < np.mean(modality_scores[[1, 2, 3]], axis=1)[:, np.newaxis]
+        mean_adv = np.mean(modality_scores[[3, 4, 5]], axis=1) < np.mean(modality_scores[[3, 4, 5]], axis=1)[:, np.newaxis]
         stat_adv = p < alfa
         
         _ = np.where(stat_adv * mean_adv)
-        conclusions = [list(1 + _[1][_[0] == i]) for i in range(n_clfs)]
+        conclusions = [list(1 + _[1][_[0] == i]) for i in range(n_clfs-1)]
         
-        all.append([''] + [''] + [''] + [", ".join(["%i" % i for i in c])
-                                         if len(c) > 0 and len(c) < n_clfs-2 else ("all" if len(c) == n_clfs-2 else "---")
+        all.append(['']+ [''] +[''] + [''] + [''] + [", ".join(["%i" % i for i in c])
+                                         if len(c) > 0 and len(c) < n_clfs-4 else ("all" if len(c) == n_clfs-4 else "---")
                                          for c in conclusions])
         
 # Wilcoxon
@@ -135,19 +180,19 @@ ranks = np.array(ranks)
 # print(ranks, ranks.shape)
 mean_ranks = np.mean(ranks, axis=0)
 
-w_statistic = np.zeros((n_clfs-1, n_clfs-1))
-p = np.zeros((n_clfs-1, n_clfs-1))
+w_statistic = np.zeros((n_clfs-3, n_clfs-3))
+p = np.zeros((n_clfs-3, n_clfs-3))
 
-for i in range(n_clfs-1):
-    for j in range(n_clfs-1):
+for i in range(n_clfs-3):
+    for j in range(n_clfs-3):
         w_statistic[i, j], p[i, j] = ranksums(ranks.T[i], ranks.T[j])
 
 _ = np.where((p < alfa) * (w_statistic > 0))
-conclusions = [list(1 + _[1][_[0] == i]) for i in range(n_clfs)]
+conclusions = [list(1 + _[1][_[0] == i]) for i in range(n_clfs-1)]
 
-all.append(['Average rank'] + [''] + [''] + ["%.3f" % v for v in mean_ranks])
-all.append([''] + [''] + [''] + [", ".join(["%i" % i for i in c])
-                             if len(c) > 0 and len(c) < n_clfs-2 else ("all" if len(c) == n_clfs-2 else "---")
+all.append(['Average rank']+ [''] +[''] + [''] + [''] + ["%.3f" % v for v in mean_ranks])
+all.append(['']+ [''] +[''] + [''] + [''] + [", ".join(["%i" % i for i in c])
+                             if len(c) > 0 and len(c) < n_clfs-4 else ("all" if len(c) == n_clfs-4 else "---")
                              for c in conclusions])
         
 print(tabulate(all, headers=["Dataset"] + ["M"] + alg_names, floatfmt=".3f", tablefmt="latex_booktabs"))

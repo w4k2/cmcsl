@@ -8,6 +8,10 @@ from sklearn.preprocessing import Normalizer, StandardScaler, MinMaxScaler
 import matplotlib.pyplot as plt
 from imblearn.over_sampling import RandomOverSampler
 from sklearn.decomposition import PCA
+import matplotlib
+
+
+matplotlib.rcParams.update({'font.size': 13, "font.family" : "monospace"})
 
 
 root = "../../mm-datasets/data_extracted/"
@@ -19,14 +23,19 @@ topics = [
 modalities = [
     ["img", "txt", "y"],
 ]
+modalities_names = [
+    ["VISUAL", "TEXT", "y"],
+]
 
-titles = ["RAW", "L2", "STD", "MM", "L2STD"]
+titles = ["RAW", "L2", "STD", "L2STD", "L2STD"]
+
+titles = ["L2","L2STD"]
 
 alg_names = [
-    "full", 
-    "seed", 
-    "single",
-    "cross",
+    "FULL", 
+    "PRE", 
+    "UNI",
+    "CMCSL",
     ]
 
 # preproc_names = [
@@ -45,10 +54,10 @@ alg_names = [
 #     ]
 
 preproc_names = [
-    "off",
+    # "off",
     "norm",
-    "stand",
-    "minmax",
+    # "stand",
+    # "minmax",
     "both1",
     # "both2",
     # "both3",
@@ -66,14 +75,14 @@ n_times = np.array([i+1 for i in range(20)])
 scores_m1 = np.load("scores/experiment_2_m1_52.npy")
 scores_m2 = np.load("scores/experiment_2_m2_52.npy")
 # PREPROC x TOPIC x ALG x TIMES x FOLDS
-scores_m1_more = np.load("scores/experiment_2_m1_52_more.npy")
-scores_m2_more = np.load("scores/experiment_2_m2_52_more.npy")
-# PREPROC x TOPIC x ALG x TIMES x FOLDS
-scores_m1 = np.concatenate((scores_m1, scores_m1_more), axis=0)
-scores_m2 = np.concatenate((scores_m2, scores_m2_more), axis=0)
+# scores_m1_more = np.load("scores/experiment_2_m1_52_more.npy")
+# scores_m2_more = np.load("scores/experiment_2_m2_52_more.npy")
+# # PREPROC x TOPIC x ALG x TIMES x FOLDS
+# scores_m1 = np.concatenate((scores_m1, scores_m1_more), axis=0)
+# scores_m2 = np.concatenate((scores_m2, scores_m2_more), axis=0)
 
-scores_m1 = scores_m1[[0, 1, 2, 4, 3]]
-scores_m2 = scores_m2[[0, 1, 2, 4, 3]]
+scores_m1 = scores_m1[[1, 3]]
+scores_m2 = scores_m2[[1, 3]]
 
 print(scores_m1.shape)
 print(scores_m2.shape)
@@ -97,7 +106,7 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
         X_m2 = np.load(X_m2_path)
         y = np.load(y_path)
         
-        fig, ax = plt.subplots(3, len(preproc_names), figsize=(20, 10))
+        fig, ax = plt.subplots(2, len(preproc_names), figsize=(10, 10))
         
         ros = RandomOverSampler(random_state=1410)
         X_m1, y_m1 = ros.fit_resample(X_m1, y)
@@ -109,18 +118,18 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
         for i in range(len(preproc_names)):
             classes = np.unique(y)
             
+            # if i == 0:
+            #     mean_X_m1 = X_m1
             if i == 0:
-                mean_X_m1 = X_m1
-            elif i == 1:
                 norm = Normalizer()
                 mean_X_m1 = norm.fit_transform(X_m1)
-            elif i == 2:
-                stand = StandardScaler()
-                mean_X_m1 = stand.fit_transform(X_m1)
-            elif i == 3:
-                minmax = MinMaxScaler()
-                mean_X_m1 = minmax.fit_transform(X_m1)
-            elif i == 4:
+            # elif i == 2:
+            #     stand = StandardScaler()
+            #     mean_X_m1 = stand.fit_transform(X_m1)
+            # elif i == 3:
+            #     minmax = MinMaxScaler()
+            #     mean_X_m1 = minmax.fit_transform(X_m1)
+            elif i == 1:
                 norm = Normalizer()
                 mean_X_m1 = norm.fit_transform(X_m1)
                 stand = StandardScaler()
@@ -148,68 +157,68 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
                 alg_scores_m2 = preproc_scores_m2[algorithm_id]
                 
                 if algorithm_id == len(alg_names)-1:
-                    ax[2, preproc_id].plot(n_times, alg_scores_m1, c="red", ls="-.", lw=lw, label = "%s %s" % (modalities[0][0], alg_names[algorithm_id]))
-                    ax[2, preproc_id].plot(n_times, alg_scores_m2, c="blue", ls="-.", lw=lw, label = "%s %s" % (modalities[0][1], alg_names[algorithm_id]))
+                    ax[1, preproc_id].plot(n_times, alg_scores_m1, c="red", ls="-.", lw=lw, label = "%s %s" % (modalities_names[0][0], alg_names[algorithm_id]))
+                    ax[1, preproc_id].plot(n_times, alg_scores_m2, c="blue", ls="-.", lw=lw, label = "%s %s" % (modalities_names[0][1], alg_names[algorithm_id]))
                 else:
-                    ax[2, preproc_id].plot(n_times, alg_scores_m1, c="red", lw=.8, ls=ls[algorithm_id], label = "%s %s" % (modalities[0][0], alg_names[algorithm_id]))
-                    ax[2, preproc_id].plot(n_times, alg_scores_m2, c="blue", lw=.8, ls=ls[algorithm_id], label = "%s %s" % (modalities[0][1], alg_names[algorithm_id]))
+                    ax[1, preproc_id].plot(n_times, alg_scores_m1, c="red", lw=.8, ls=ls[algorithm_id], label = "%s %s" % (modalities_names[0][0], alg_names[algorithm_id]))
+                    ax[1, preproc_id].plot(n_times, alg_scores_m2, c="blue", lw=.8, ls=ls[algorithm_id], label = "%s %s" % (modalities_names[0][1], alg_names[algorithm_id]))
                     
-                ax[2, preproc_id].spines[['right', 'top']].set_visible(False)
-                ax[2, preproc_id].grid((.7, .7, .7), ls=":")
-                ax[2, preproc_id].set_ylabel("Balanced accuracy", fontsize = 12)
-                ax[2, preproc_id].set_xlabel("#samples for each class", fontsize = 12)
-                ax[2, preproc_id].set_xlim(n_times[0], n_times[-1])
-                ax[2, preproc_id].set_xticks([1, 5, 10, 15, 20])
+                ax[1, preproc_id].spines[['right', 'top']].set_visible(False)
+                ax[1, preproc_id].grid((.7, .7, .7), ls=":")
+                ax[1, preproc_id].set_ylabel("Balanced accuracy", fontsize = 12)
+                ax[1, preproc_id].set_xlabel("#samples for each class", fontsize = 12)
+                ax[1, preproc_id].set_xlim(n_times[0], n_times[-1])
+                ax[1, preproc_id].set_xticks([1, 5, 10, 15, 20])
             
             
-        # m2
-        for i in range(len(preproc_names)):
-            classes = np.unique(y)
+        # # m2
+        # for i in range(len(preproc_names)):
+        #     classes = np.unique(y)
             
-            if i == 0:
-                mean_X_m2 = X_m2
-            elif i == 1:
-                norm = Normalizer()
-                mean_X_m2 = norm.fit_transform(X_m2)
-            elif i == 2:
-                stand = StandardScaler()
-                mean_X_m2 = stand.fit_transform(X_m2)
-            elif i == 3:
-                minmax = MinMaxScaler()
-                mean_X_m2 = minmax.fit_transform(X_m2)
-            elif i == 4:
-                norm = Normalizer()
-                mean_X_m2 = norm.fit_transform(X_m2)
-                stand = StandardScaler()
-                mean_X_m2 = stand.fit_transform(mean_X_m2)
+        #     if i == 0:
+        #         mean_X_m2 = X_m2
+        #     elif i == 1:
+        #         norm = Normalizer()
+        #         mean_X_m2 = norm.fit_transform(X_m2)
+        #     elif i == 2:
+        #         stand = StandardScaler()
+        #         mean_X_m2 = stand.fit_transform(X_m2)
+        #     elif i == 3:
+        #         minmax = MinMaxScaler()
+        #         mean_X_m2 = minmax.fit_transform(X_m2)
+        #     elif i == 4:
+        #         norm = Normalizer()
+        #         mean_X_m2 = norm.fit_transform(X_m2)
+        #         stand = StandardScaler()
+        #         mean_X_m2 = stand.fit_transform(mean_X_m2)
                 
-            mean_X_m2 = np.mean(mean_X_m2, axis=1)
-            # max_counts = []
-            for class_id in classes:
-                counts, bins = np.histogram(mean_X_m2[y_m2 == class_id], bins=32)
-                ax[1, i].stairs(counts, bins)
-                ax[1, i].set_title("TEXT %s" % (titles[i]), fontsize = 15)
-                ax[1, i].spines[['right', 'top']].set_visible(False)
-                ax[1, i].grid((.7, .7, .7), ls=":")
-                ax[1, i].set_ylabel("Counts", fontsize = 12)
-                ax[1, i].set_xlabel("Bins", fontsize = 12)
+        #     mean_X_m2 = np.mean(mean_X_m2, axis=1)
+        #     # max_counts = []
+        #     for class_id in classes:
+        #         counts, bins = np.histogram(mean_X_m2[y_m2 == class_id], bins=32)
+        #         ax[1, i].stairs(counts, bins)
+        #         ax[1, i].set_title("TEXT %s" % (titles[i]), fontsize = 15)
+        #         ax[1, i].spines[['right', 'top']].set_visible(False)
+        #         ax[1, i].grid((.7, .7, .7), ls=":")
+        #         ax[1, i].set_ylabel("Counts", fontsize = 12)
+        #         ax[1, i].set_xlabel("Bins", fontsize = 12)
                 
-                max_counts.append(np.max(counts))
+        #         max_counts.append(np.max(counts))
             
         # ax = ax.ravel()
         for i in range(len(preproc_names)):
             round_to = round(50 * round(np.max(max_counts) / 50) + 50, -1)
             ax[0, i].set_ylim(0.0, round_to)
-            ax[1, i].set_ylim(0.0, round_to)
-            ax[2, i].set_ylim(0.5, 1.0)
+            # ax[1, i].set_ylim(0.0, round_to)
+            ax[1, i].set_ylim(0.5, 1.0)
         
         
         plt.tight_layout()
-        fig.subplots_adjust(bottom=.1)
-        handles, labels = ax[2, 3].get_legend_handles_labels()
-        lgnd = fig.legend(handles, labels, ncol=8, frameon=False, bbox_to_anchor=(0.5, 0.0), fontsize=16, loc='lower center')
+        fig.subplots_adjust(bottom=.15)
+        handles, labels = ax[1, 1].get_legend_handles_labels()
+        lgnd = fig.legend(handles, labels, ncol=4, frameon=False, bbox_to_anchor=(0.5, 0.0), fontsize=16, loc='lower center')
         
         
-        plt.savefig("figures/ex2/whole_%s_more.png" % topic)
-        plt.savefig("figures/ex2/whole_%s_more.eps" % topic)
+        plt.savefig("figures/ex2/whole_%s_more_pprai24.png" % topic)
+        plt.savefig("figures/ex2/whole_%s_more_pprai24.eps" % topic)
         # exit()
