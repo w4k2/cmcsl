@@ -61,10 +61,10 @@ preproc_names = [
     # "stand",
     "minmax",
     # "both1",
-    "both2",
-    "both3",
-    "both4",
-    "three",
+    # "both2",
+    # "both3",
+    # "both4",
+    # "three",
     ]
 
 # PREPROC x DATASETS x ALG x TIMES x FOLDS

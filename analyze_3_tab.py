@@ -3,8 +3,8 @@
 """
 import numpy as np
 from tabulate import tabulate
-from utils import t_test_corrected
-from scipy.stats import rankdata, ranksums
+from utils import t_test_corrected, cv52cft
+from scipy.stats import rankdata, ranksums, wilcoxon, ttest_rel
 
 alfa = .05
 
@@ -18,14 +18,26 @@ topics = ["HR", "DS", "HM", "BW", "AM", "FS", "FW", "MS", "FM", "AT",
 modalities = [
     ["img", "txt"],
 ]
+modalities_tab = [
+    ["Visual", "Text"],
+]
+
+# alg_names = [
+#     "full",
+#     "early fusion",
+#     "late fusion",
+#     "seed", 
+#     "single",
+#     "cross",
+#     ]
 
 alg_names = [
-    "full",
-    "early fusion",
-    "late fusion",
-    "seed", 
-    "single",
-    "cross",
+    "FULL",
+    "EF",
+    "LF",
+    "PRE", 
+    "UNI",
+    "CMCSL",
     ]
 
 n_clfs = len(alg_names)
@@ -42,9 +54,10 @@ scores_all_mc = np.stack((scores_m1_mc, scores_m2_mc))
 scores_all = np.concatenate((scores_all.reshape(2, 20, 4, 20, 10, 1), scores_all_mc), axis=5)
 
 # Only GNB – last dim
+base_clf = 0
 # MODALITY x TOPIC x ALG x FOLDS
 scores_all = np.mean(scores_all, axis=3)
-scores_all = scores_all[:, :, :, :, 0]
+scores_all = scores_all[:, :, :, :, base_clf]
 scores_all_binary = scores_all[:, :10]
 scores_all_multi = scores_all[:, 10:]
 
@@ -87,21 +100,21 @@ scores_all_multi = scores_all_multi[:, :, [0, 5, 4, 1, 2, 3], :]
 
 # Binary
 all = []
-ranks = []
+ranks_ = []
 wilc = []
 for data_id, data in enumerate(topics[:10]):
     # MODALITY x ALG x FOLDS
     data_scores = scores_all_binary[:, data_id]
-    for modality_id, modality in enumerate(modalities[0]):
+    for modality_id, modality in enumerate(modalities_tab[0]):
         # ALG x FOLDS
         modality_scores = data_scores[modality_id]
-        ranks.append(rankdata(np.mean(modality_scores[3:], axis=1)))
+        ranks_.append(rankdata(np.mean(modality_scores[3:], axis=1)))
         wilc.append(np.mean(modality_scores[3:], axis=1))
         all.append(["%s"% data] + ["%s"% modality] + ["%.3f" % score for score in np.mean(modality_scores, axis=1)])
         
         # t-test corrected
         print(modality_scores.shape)
-        T, p = np.array([[t_test_corrected(modality_scores[[3, 4, 5]][i],
+        T, p = np.array([[cv52cft(modality_scores[[3, 4, 5]][i],
                                modality_scores[[3, 4, 5]][j]) if i != j else (0.0, 1.0)
                               for i in range(n_clfs-3)]
                              for j in range(n_clfs-3)]
@@ -118,9 +131,9 @@ for data_id, data in enumerate(topics[:10]):
         
 # Wilcoxon
 # DATASETS x MODALITIES x CLF
-ranks = np.array(ranks)
+ranks = np.array(wilc)
 # print(ranks, ranks.shape)
-mean_ranks = np.mean(ranks, axis=0)
+mean_ranks = np.mean(ranks_, axis=0)
 
 # ranks = np.array(wilc)
 
@@ -130,7 +143,7 @@ p = np.zeros((n_clfs-3, n_clfs-3))
 
 for i in range(n_clfs-3):
     for j in range(n_clfs-3):
-        w_statistic[i, j], p[i, j] = ranksums(ranks.T[i], ranks.T[j])
+        w_statistic[i, j], p[i, j] = wilcoxon(ranks.T[i], ranks.T[j], zero_method="zsplit", alternative="greater")
 
 _ = np.where((p < alfa) * (w_statistic > 0))
 conclusions = [list(1 + _[1][_[0] == i]) for i in range(n_clfs-1)]
@@ -147,19 +160,19 @@ print(tabulate(all, headers=["Dataset"] + ["M"] + alg_names, floatfmt=".3f", tab
 
 # Multi
 all = []
-ranks = []
+ranks_ = []
 for data_id, data in enumerate(topics[10:]):
     # MODALITY x ALG x FOLDS
     data_scores = scores_all_multi[:, data_id]
-    for modality_id, modality in enumerate(modalities[0]):
+    for modality_id, modality in enumerate(modalities_tab[0]):
         # ALG x FOLDS
         modality_scores = data_scores[modality_id]
-        ranks.append(rankdata(np.mean(modality_scores[3:], axis=1)))
+        ranks_.append(rankdata(np.mean(modality_scores[3:], axis=1)))
         
         all.append(["%s"% data] + ["%s"% modality] + ["%.3f" % score for score in np.mean(modality_scores, axis=1)])
         
         # t-test corrected
-        T, p = np.array([[t_test_corrected(modality_scores[[3, 4, 5]][i],
+        T, p = np.array([[cv52cft(modality_scores[[3, 4, 5]][i],
                                modality_scores[[3, 4, 5]][j]) if i != j else (0.0, 1.0)
                               for i in range(n_clfs-3)]
                              for j in range(n_clfs-3)]
@@ -176,16 +189,16 @@ for data_id, data in enumerate(topics[10:]):
         
 # Wilcoxon
 # DATASETS x MODALITIES x CLF
-ranks = np.array(ranks)
+ranks = np.array(wilc)
 # print(ranks, ranks.shape)
-mean_ranks = np.mean(ranks, axis=0)
+mean_ranks = np.mean(ranks_, axis=0)
 
 w_statistic = np.zeros((n_clfs-3, n_clfs-3))
 p = np.zeros((n_clfs-3, n_clfs-3))
 
 for i in range(n_clfs-3):
     for j in range(n_clfs-3):
-        w_statistic[i, j], p[i, j] = ranksums(ranks.T[i], ranks.T[j])
+        w_statistic[i, j], p[i, j] = wilcoxon(ranks.T[i], ranks.T[j], zero_method="zsplit", alternative="greater")
 
 _ = np.where((p < alfa) * (w_statistic > 0))
 conclusions = [list(1 + _[1][_[0] == i]) for i in range(n_clfs-1)]
