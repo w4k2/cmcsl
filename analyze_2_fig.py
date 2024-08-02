@@ -11,7 +11,7 @@ from sklearn.decomposition import PCA
 import matplotlib
 
 
-# matplotlib.rcParams.update({'font.size': 13, "font.family" : "monospace"})
+matplotlib.rcParams.update({'font.size': 11.5, "font.family" : "monospace"})
 
 
 root = "../../mm-datasets/data_extracted/"
@@ -135,11 +135,11 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
             for class_id in classes:
                 counts, bins = np.histogram(mean_X_m1[y_m1 == class_id], bins=32)
                 ax[0, i].stairs(counts, bins)
-                ax[0, i].set_title("VISUAL %s" % (titles[i]), fontsize = 15)
+                ax[0, i].set_title("Visual %s" % (titles[i]), fontsize = 15)
                 ax[0, i].spines[['right', 'top']].set_visible(False)
                 ax[0, i].grid((.7, .7, .7), ls=":")
-                ax[0, i].set_ylabel("Counts", fontsize = 14)
-                ax[0, i].set_xlabel("Bins", fontsize = 14)
+                ax[0, 0].set_ylabel("Counts", fontsize = 14)
+                # ax[0, i].set_xlabel("Bins", fontsize = 14)
                 
                 max_counts.append(np.max(counts))
             # ax[0, i].set_ylim(0.0, np.max(max_counts))
@@ -193,11 +193,11 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
             for class_id in classes:
                 counts, bins = np.histogram(mean_X_m2[y_m2 == class_id], bins=32)
                 ax[1, i].stairs(counts, bins)
-                ax[1, i].set_title("TEXT %s" % (titles[i]), fontsize = 15)
+                ax[1, i].set_title("Text %s" % (titles[i]), fontsize = 15)
                 ax[1, i].spines[['right', 'top']].set_visible(False)
                 ax[1, i].grid((.7, .7, .7), ls=":")
-                ax[1, i].set_ylabel("Counts", fontsize = 14)
-                ax[1, i].set_xlabel("Bins", fontsize = 14)
+                ax[1, 0].set_ylabel("Counts", fontsize = 14)
+                ax[1, i].set_xlabel("Histogram bins", fontsize = 14)
                 
                 max_counts.append(np.max(counts))
             
