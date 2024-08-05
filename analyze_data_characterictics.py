@@ -8,7 +8,7 @@ from tabulate import tabulate
 from sklearn.model_selection import train_test_split
 
 
-root = "../../mm-datasets/data_extracted/"
+root = "../../../../Volumes/T7/Multimodal/mm-datasets/data_extracted/"
 datasets = [
     "mmIMDb",
     ]
@@ -79,17 +79,14 @@ for dataset_id, dataset in tqdm(enumerate(datasets), disable=True):
         y = np.load(y_path)
         
         X_concatenated = np.concatenate((X_m1, X_m2), axis=1)
-        
-        X_train, X_extract, y_train, y_extract = train_test_split(
-            X_concatenated, y, test_size=.8, random_state=1410, stratify=y, shuffle=True)
     
-        _, counts = np.unique(y_extract, return_counts=True)
+        _, counts = np.unique(y, return_counts=True)
         
         class_names_counts = []
         for id, i in enumerate(class_names[topic_id]):
             class_names_counts.append("%s (%i)" % (i, counts[id]))
         
-        table.append(["%s" % topic] + [", ".join(class_names_counts)] + [y_extract.shape[0]])
+        table.append(["%s" % topic] + [", ".join(class_names_counts)] + [y.shape[0]])
         
 
 print(tabulate(table, headers=headers, tablefmt="latex_booktabs"))
